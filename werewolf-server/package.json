@@ -1,9 +1,0 @@
-{
-  "name": "werewolf-online",
-  "version": "1.0.0",
-  "description": "เกมหมาป่าออนไลน์ เล่นกับเพื่อนผ่านลิงก์ ไม่ต้องล็อกอิน",
-  "main": "server.js",
-  "scripts": { "start": "node server.js" },
-  "engines": { "node": ">=18" },
-  "dependencies": { "ws": "^8.18.0" }
-}
