@@ -10,16 +10,19 @@ const INDEX = path.join(__dirname, 'public', 'index.html');
 const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
 const MAX_PLAYERS = 16;
 const MIN_PLAYERS = 4;
+const CHAT_KEEP = 80;
+const CHAT_SEND = 60;
+const CHAT_LEN = 200;
 
-const ROLE_NAME = { wolf: 'หมาป่า', villager: 'ชาวบ้าน', seer: 'ผู้หยั่งรู้', doctor: 'หมอ' };
+const ROLE_NAME = { wolf: 'หมาป่า', villager: 'ชาวบ้าน', seer: 'หมอดู', witch: 'แม่มด' };
 const rooms = new Map();
 
 /* ---------- helpers ---------- */
 function dist(n) {
   const w = n >= 12 ? 3 : n >= 8 ? 2 : 1;
   const s = n >= 5 ? 1 : 0;
-  const d = n >= 6 ? 1 : 0;
-  return { w, s, d, v: n - w - s - d };
+  const m = n >= 6 ? 1 : 0;
+  return { w, s, m, v: n - w - s - m };
 }
 function genCode() {
   const a = 'ABCDEFGHJKMNPQRSTUVWXYZ';
@@ -56,8 +59,10 @@ function winner(room) {
 function newRoom(code) {
   return {
     code, hostToken: null, phase: 'lobby', game: pid(), round: 0,
-    players: new Map(), // token -> {token,id,name,ts,ws}
+    players: new Map(), // token -> {token,id,name,ts,ws,lastChat}
     roles: {}, alive: {}, acts: {}, log: [], seer: null, winner: null,
+    victim: null, witchAct: null, witchPot: { heal: true, poison: true },
+    chat: [], chatSeq: 0,
     touched: Date.now(),
   };
 }
@@ -65,6 +70,8 @@ function resetToLobby(room) {
   room.phase = 'lobby'; room.game = pid(); room.round = 0;
   room.roles = {}; room.alive = {}; room.acts = {}; room.log = [];
   room.seer = null; room.winner = null;
+  room.victim = null; room.witchAct = null; room.witchPot = { heal: true, poison: true };
+  room.chat = [];
 }
 function byId(room, id) {
   for (const p of room.players.values()) if (p.id === id) return p;
@@ -81,12 +88,43 @@ function hostOf(room) {
 function aliveIds(room) {
   return [...room.players.values()].map(p => p.id).filter(id => room.roles[id] && room.alive[id]);
 }
-function nightNeeded(room) {
-  return aliveIds(room).filter(id => ['wolf', 'seer', 'doctor'].includes(room.roles[id]));
-}
 function hasValidAct(room, id) {
   const to = room.acts[id];
   return !!to && !!room.alive[to];
+}
+
+/* ---------- night helpers ---------- */
+function wolvesAlive(room) { return aliveIds(room).filter(i => room.roles[i] === 'wolf'); }
+function validWolfPick(room, id) {
+  const to = room.acts[id];
+  return !!to && !!room.alive[to] && room.roles[to] !== 'wolf';
+}
+function wolvesDone(room) {
+  const w = wolvesAlive(room);
+  return w.length > 0 && w.every(id => validWolfPick(room, id));
+}
+function seerAlive(room) { return aliveIds(room).find(i => room.roles[i] === 'seer') || null; }
+function seerDone(room) {
+  const s = seerAlive(room);
+  if (!s) return true;
+  const to = room.acts[s];
+  return !!to && !!room.alive[to] && to !== s;
+}
+function witchAlive(room) { return aliveIds(room).find(i => room.roles[i] === 'witch') || null; }
+function witchNeeded(room) {
+  return !!witchAlive(room) && (room.witchPot.heal || room.witchPot.poison);
+}
+function witchDone(room) { return !witchNeeded(room) || room.witchAct !== null; }
+function pickVictim(room) {
+  const tally = {};
+  wolvesAlive(room).forEach(w => {
+    if (validWolfPick(room, w)) tally[room.acts[w]] = (tally[room.acts[w]] || 0) + 1;
+  });
+  const ent = Object.entries(tally);
+  if (!ent.length) return null;
+  const m = Math.max(...ent.map(e => e[1]));
+  const top = ent.filter(e => e[1] === m).map(e => e[0]);
+  return top[crypto.randomInt(top.length)];
 }
 
 /* ---------- game flow ---------- */
@@ -96,46 +134,39 @@ function startGame(room) {
   const list = [];
   for (let i = 0; i < d.w; i++) list.push('wolf');
   for (let i = 0; i < d.s; i++) list.push('seer');
-  for (let i = 0; i < d.d; i++) list.push('doctor');
+  for (let i = 0; i < d.m; i++) list.push('witch');
   for (let i = 0; i < d.v; i++) list.push('villager');
   shuffle(list);
   room.roles = {}; room.alive = {};
   ids.forEach((id, i) => { room.roles[id] = list[i]; room.alive[id] = true; });
   room.phase = 'night'; room.round = 1; room.acts = {}; room.seer = null; room.winner = null;
+  room.victim = null; room.witchAct = null; room.witchPot = { heal: true, poison: true };
+  room.chat = [];
   room.log = [{ r: 1, k: 'info', t: 'เกมเริ่มแล้ว มี ' + ids.length + ' คน' }];
 }
 function resolveNight(room) {
-  const ids = aliveIds(room);
-  const valid = (id, pred) => {
-    const to = room.acts[id];
-    if (!to || !room.alive[to]) return null;
-    return !pred || pred(to) ? to : null;
-  };
-  const tally = {};
-  ids.filter(i => room.roles[i] === 'wolf').forEach(w => {
-    const t = valid(w, t => room.roles[t] !== 'wolf');
-    if (t) tally[t] = (tally[t] || 0) + 1;
-  });
-  let victim = null;
-  const ent = Object.entries(tally);
-  if (ent.length) {
-    const m = Math.max(...ent.map(e => e[1]));
-    const top = ent.filter(e => e[1] === m).map(e => e[0]);
-    victim = top[crypto.randomInt(top.length)];
-  }
-  const docId = ids.find(i => room.roles[i] === 'doctor');
-  const prot = docId ? valid(docId) : null;
-  const seerId = ids.find(i => room.roles[i] === 'seer');
-  const seen = seerId ? valid(seerId, t => t !== seerId) : null;
-  const killed = victim && victim !== prot ? victim : null;
-  if (killed) {
-    room.alive[killed] = false;
-    room.log.push({ r: room.round, k: 'night', t: nameOf(room, killed) + ' ถูกหมาป่ากัดตายในคืนนี้' });
-  } else {
-    room.log.push({ r: room.round, k: 'night', t: 'คืนนี้ไม่มีใครตาย' });
-  }
+  if (room.victim === null) room.victim = pickVictim(room);
+  const act = room.witchAct;
+  const healed = !!act && act.kind === 'heal';
+  const poisoned = act && act.kind === 'poison' && room.alive[act.to] ? act.to : null;
+  const killedByWolf = room.victim && !healed ? room.victim : null;
+
+  const seerId = seerAlive(room);
+  const seen = seerId && seerDone(room) ? room.acts[seerId] : null;
   room.seer = seen ? { r: room.round, by: seerId, to: seen, wolf: room.roles[seen] === 'wolf' } : null;
-  room.acts = {};
+
+  let any = false;
+  if (killedByWolf) {
+    room.alive[killedByWolf] = false; any = true;
+    room.log.push({ r: room.round, k: 'night', t: nameOf(room, killedByWolf) + ' ถูกหมาป่ากัดตายในคืนนี้' });
+  }
+  if (poisoned && poisoned !== killedByWolf) {
+    room.alive[poisoned] = false; any = true;
+    room.log.push({ r: room.round, k: 'night', t: nameOf(room, poisoned) + ' ตายอย่างลึกลับในคืนนี้' });
+  }
+  if (!any) room.log.push({ r: room.round, k: 'night', t: 'คืนนี้ไม่มีใครตาย' });
+
+  room.acts = {}; room.victim = null; room.witchAct = null;
   const win = winner(room);
   room.phase = win ? 'end' : 'day';
   room.winner = win;
@@ -163,13 +194,16 @@ function resolveVote(room) {
   const win = winner(room);
   room.winner = win;
   if (win) room.phase = 'end';
-  else { room.phase = 'night'; room.round += 1; }
+  else { room.phase = 'night'; room.round += 1; room.victim = null; room.witchAct = null; }
 }
 function autoAdvance(room) {
-  if (room.phase === 'night' && nightNeeded(room).every(id => hasValidAct(room, id))) resolveNight(room);
-  else if (room.phase === 'vote' && aliveIds(room).every(id => hasValidAct(room, id))) resolveVote(room);
+  if (room.phase === 'night') {
+    if (room.victim === null && wolvesDone(room)) room.victim = pickVictim(room);
+    if (room.victim !== null && seerDone(room) && witchDone(room)) resolveNight(room);
+  } else if (room.phase === 'vote' && aliveIds(room).every(id => hasValidAct(room, id))) {
+    resolveVote(room);
+  }
 }
-// A player who left or died mid-phase can make the phase complete.
 function dropPlayer(room, p) {
   if (room.phase === 'lobby') {
     room.players.delete(p.token);
@@ -178,9 +212,19 @@ function dropPlayer(room, p) {
       room.hostToken = next ? next.token : null;
     }
     if (!room.players.size) rooms.delete(room.code);
-    return;
   }
-  // in a running game the player stays (as a disconnected seat) so they can come back
+  // in a running game the seat stays so the player can come back
+}
+
+/* ---------- chat ---------- */
+// Which channel a player's next message would go to, or null when they may not talk.
+function chatChannel(room, p) {
+  if (room.phase === 'lobby' || room.phase === 'end') return 'all';
+  const inGame = !!room.roles[p.id];
+  const alive = !!room.alive[p.id];
+  if (!inGame || !alive) return 'dead';
+  if (room.phase === 'night') return room.roles[p.id] === 'wolf' ? 'wolf' : null;
+  return 'all';
 }
 
 /* ---------- views (each player only sees what they may) ---------- */
@@ -207,13 +251,34 @@ function viewFor(room, p) {
   };
   if (myRole === 'wolf') {
     v.mates = players.filter(q => q.id !== me && q.role === 'wolf').map(q => ({ id: q.id, to: room.acts[q.id] || null }));
+    v.locked = room.phase === 'night' && room.victim !== null;
   }
   if (myRole === 'seer' && room.seer && room.seer.by === me) v.seer = { to: room.seer.to, wolf: room.seer.wolf, r: room.seer.r };
+  if (myRole === 'witch') {
+    v.witch = {
+      heal: room.witchPot.heal, poison: room.witchPot.poison,
+      victim: room.phase === 'night' ? room.victim : null,
+      acted: room.witchAct ? room.witchAct.kind : null,
+    };
+  }
   if (v.me.isHost) {
-    if (room.phase === 'night') { const need = nightNeeded(room); v.progress = { done: need.filter(id => hasValidAct(room, id)).length, total: need.length }; }
+    if (room.phase === 'night') {
+      const wv = wolvesAlive(room);
+      let total = wv.length, done = wv.filter(i => validWolfPick(room, i)).length;
+      if (seerAlive(room)) { total++; if (seerDone(room)) done++; }
+      if (witchNeeded(room)) { total++; if (room.witchAct !== null) done++; }
+      v.progress = { done, total };
+    }
     if (room.phase === 'vote') { const al = aliveIds(room); v.progress = { done: al.filter(id => hasValidAct(room, id)).length, total: al.length }; }
   }
   if (room.phase === 'lobby') v.dist = dist(Math.max(room.players.size, MIN_PLAYERS));
+
+  const inGame = !!myRole, amAlive = !!room.alive[me];
+  const canSee = ch => end || room.phase === 'lobby' || ch === 'all'
+    || (ch === 'wolf' && myRole === 'wolf')
+    || (ch === 'dead' && (!inGame || !amAlive));
+  v.chat = room.chat.filter(c => canSee(c.ch)).slice(-CHAT_SEND).map(c => ({ i: c.i, from: c.from, n: c.n, ch: c.ch, t: c.t }));
+  v.chatCh = chatChannel(room, p);
   return v;
 }
 function send(ws, obj) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); }
@@ -276,7 +341,7 @@ function handle(ws, m) {
     if (!code) return send(ws, { t: 'err', m: 'สร้างห้องไม่สำเร็จ ลองอีกครั้ง' });
     const room = newRoom(code);
     room.hostToken = token;
-    room.players.set(token, { token, id: pid(), name, ts: Date.now(), ws: null });
+    room.players.set(token, { token, id: pid(), name, ts: Date.now(), ws: null, lastChat: 0 });
     rooms.set(code, room);
     attach(ws, room, token);
     return broadcast(room);
@@ -298,7 +363,7 @@ function handle(ws, m) {
     if (room.phase !== 'lobby') return send(ws, { t: 'err', m: 'ห้องนี้เริ่มเล่นไปแล้ว เข้าใหม่ไม่ได้' });
     if (room.players.size >= MAX_PLAYERS) return send(ws, { t: 'err', m: 'ห้องเต็มแล้ว (สูงสุด ' + MAX_PLAYERS + ' คน)' });
     for (const q of room.players.values()) if (q.name === name) return send(ws, { t: 'err', m: 'มีคนใช้ชื่อ "' + name + '" ในห้องแล้ว เปลี่ยนชื่อนิดหนึ่ง' });
-    room.players.set(token, { token, id: pid(), name, ts: Date.now(), ws: null });
+    room.players.set(token, { token, id: pid(), name, ts: Date.now(), ws: null, lastChat: 0 });
     attach(ws, room, token);
     return broadcast(room);
   }
@@ -323,17 +388,34 @@ function handle(ws, m) {
       startGame(room); break;
     case 'act': {
       const to = String(m.to || '');
-      const target = byId(room, to);
-      if (!target) return;
+      if (!byId(room, to)) return;
       if (room.phase !== 'night' && room.phase !== 'vote') return;
       if (!room.alive[p.id] || !room.alive[to]) return;
       const role = room.roles[p.id];
       if (room.phase === 'night') {
-        if (!['wolf', 'seer', 'doctor'].includes(role)) return;
-        if (role === 'wolf' && room.roles[to] === 'wolf') return;
-        if (role === 'seer' && to === p.id) return;
+        if (role === 'wolf') {
+          if (room.victim !== null || room.roles[to] === 'wolf') return;
+        } else if (role === 'seer') {
+          if (to === p.id) return;
+        } else return;
       } else if (to === p.id) return;
       room.acts[p.id] = to;
+      autoAdvance(room); break;
+    }
+    case 'witch': {
+      if (room.phase !== 'night' || room.roles[p.id] !== 'witch' || !room.alive[p.id]) return;
+      if (room.victim === null || room.witchAct !== null) return;
+      if (m.kind === 'pass') room.witchAct = { kind: 'pass' };
+      else if (m.kind === 'heal') {
+        if (!room.witchPot.heal) return;
+        room.witchPot.heal = false;
+        room.witchAct = { kind: 'heal', to: room.victim };
+      } else if (m.kind === 'poison') {
+        const to = String(m.to || '');
+        if (!room.witchPot.poison || !byId(room, to) || !room.alive[to] || to === p.id) return;
+        room.witchPot.poison = false;
+        room.witchAct = { kind: 'poison', to };
+      } else return;
       autoAdvance(room); break;
     }
     case 'toVote':
@@ -348,6 +430,18 @@ function handle(ws, m) {
     case 'rematch':
       if (!isHost || room.phase !== 'end') return;
       resetToLobby(room); break;
+    case 'chat': {
+      const text = String(m.text || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, CHAT_LEN);
+      if (!text) return;
+      const now = Date.now();
+      if (now - (p.lastChat || 0) < 700) return send(ws, { t: 'err', m: 'พิมพ์ถี่เกินไป รอสักครู่' });
+      const ch = chatChannel(room, p);
+      if (!ch) return send(ws, { t: 'err', m: 'กลางคืนห้ามคุยกัน (หมาป่าคุยกันเองได้)' });
+      p.lastChat = now;
+      room.chat.push({ i: ++room.chatSeq, from: p.id, n: p.name, ch, t: text });
+      if (room.chat.length > CHAT_KEEP) room.chat.splice(0, room.chat.length - CHAT_KEEP);
+      break;
+    }
     default: return;
   }
   broadcast(room);

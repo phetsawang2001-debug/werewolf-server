@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>คืนหมาป่า</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Sarabun:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#10152b; --surface:#19203f; --surface-2:#222b52; --line:#2f3a6a;
+  --fg:#e9ecf7; --muted:#9ba5cb; --accent:#a9c1ff; --on-accent:#0e1330;
+  --danger:#ff8080; --good:#7ddba3; --witch:#c39bff; --moon:#e8edff;
+  --f-display:'Mitr','Thonburi','Tahoma',sans-serif;
+  --f-body:'Sarabun','Thonburi','Tahoma',sans-serif;
+  color-scheme:dark;
+}
+:root[data-phase="day"]{
+  --bg:#e2ecf5; --surface:#ffffff; --surface-2:#eef3f9; --line:#c3d1e3;
+  --fg:#18223f; --muted:#56628a; --accent:#2a4fcf; --on-accent:#ffffff;
+  --danger:#c42f33; --good:#14744a; --witch:#7a3fc4; --moon:#e8a21a;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{
+  margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 var(--f-body);
+  padding-block:12px 36px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  transition:background .6s,color .6s;
+}
+h1,h2{font-family:var(--f-display);font-weight:500;margin:0;text-wrap:balance;line-height:1.3}
+h1{font-size:1.3rem}
+h2{font-size:1.1rem}
+p{margin:0}
+.wrap{max-width:560px;margin:0 auto;display:grid;gap:14px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:4px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.emb{flex:none;display:block}
+.art{flex:none;display:block;max-width:100%}
+.eyebrow{font-size:.78rem;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.codechip{font:600 1.05rem var(--f-display);letter-spacing:.28em;padding:6px 10px 6px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:12px;min-width:0}
+.panel.quiet{background:transparent}
+label{font-weight:600;font-size:.92rem}
+input{font:inherit;color:var(--fg);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-width:0}
+input#cd{text-transform:uppercase;letter-spacing:.3em;font-family:var(--f-display)}
+.btn{font:600 1rem var(--f-body);background:var(--accent);color:var(--on-accent);border:1px solid transparent;border-radius:10px;padding:11px 16px;cursor:pointer;min-height:46px}
+.btn.ghost{background:transparent;color:var(--fg);border-color:var(--line)}
+.btn.danger{background:var(--danger)}
+.btn.good{background:var(--good)}
+.btn.small{min-height:38px;padding:6px 12px;font-size:.9rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+input:focus-visible,.btn:focus-visible,.pick:focus-visible,.role:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.88rem}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.err{border:1px solid var(--danger);color:var(--danger);border-radius:10px;padding:10px 12px;font-size:.92rem}
+.warn{border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:8px 12px;font-size:.88rem}
+.note{color:var(--muted);font-size:.92rem}
+.big{font:600 2.6rem/1 var(--f-display);letter-spacing:.3em;text-align:center;padding:10px 0 10px .3em}
+.phase{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.phase strong{font:500 1.4rem var(--f-display)}
+.role{display:flex;gap:14px;align-items:center;text-align:left;font:inherit;color:var(--fg);background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:14px 16px;cursor:pointer;width:100%}
+.role.open{border-style:solid}
+.role .rt{display:grid;gap:2px;min-width:0}
+.role .rn{font:500 1.5rem var(--f-display)}
+.role .hint{font-size:.82rem;color:var(--muted)}
+.r-wolf{color:var(--danger)} .r-seer{color:var(--accent)} .r-witch{color:var(--witch)} .r-villager{color:var(--muted)}
+.gal{display:grid;gap:14px}
+.gi{display:flex;gap:14px;align-items:flex-start}
+.gi div{min-width:0}
+.gi b{font:500 1.05rem var(--f-display)}
+.gi p{font-size:.9rem;color:var(--muted);line-height:1.5}
+.picks{display:grid;gap:8px}
+.pick{display:flex;justify-content:space-between;align-items:center;gap:10px;font:inherit;font-weight:500;color:var(--fg);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:11px 14px;cursor:pointer;min-height:46px;text-align:left}
+.pick.on{box-shadow:inset 0 0 0 2px var(--accent)}
+.pick.poison.on{box-shadow:inset 0 0 0 2px var(--danger)}
+.pick:disabled{opacity:.6;cursor:not-allowed}
+.pick .tick{font-size:.82rem;color:var(--accent)}
+.pots{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.pot{display:flex;align-items:center;gap:8px;font-size:.9rem}
+.pls{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.pl{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;background:var(--surface-2);min-width:0}
+.pl .nm{display:flex;align-items:center;flex-wrap:wrap;gap:2px 6px;overflow-wrap:anywhere;min-width:0}
+.pl .nm .chip{margin-left:0}
+.pl.dead .nm .t{text-decoration:line-through;color:var(--muted)}
+.pl .st{font-size:.82rem;color:var(--muted);white-space:nowrap}
+.chip{display:inline-block;padding:0 8px;border:1px solid currentColor;border-radius:99px;font-size:.78rem;line-height:1.6;margin-left:6px;white-space:nowrap}
+.log{list-style:none;margin:0;padding:0;display:grid;gap:8px;font-size:.95rem}
+.log li{display:grid;grid-template-columns:auto 1fr;gap:10px}
+.log b{font-weight:600;color:var(--muted);font-size:.82rem;padding-top:2px;white-space:nowrap}
+.verdict{font:500 1.5rem/1.35 var(--f-display);text-wrap:balance}
+.chatlist{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:240px;overflow-y:auto;align-content:start}
+.msg{display:grid;padding:6px 10px;border-radius:10px;background:var(--surface-2);min-width:0;overflow-wrap:anywhere}
+.msg b{font-size:.8rem;color:var(--muted);font-weight:600}
+.msg.mine{background:transparent;border:1px solid var(--line)}
+.chatform{display:flex;gap:8px}
+.chatform .btn{flex:none}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{padding:6px 8px;text-align:center;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:600;color:var(--muted);font-size:.8rem}
+@media (prefers-reduced-motion:reduce){body{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+(function(){
+'use strict';
+var $app=document.getElementById('app');
+var ROLE={
+  wolf:{n:'หมาป่า',d:'ทุกคืนเลือกชาวบ้านที่จะกัด คุยกับเพื่อนหมาป่าได้ในช่องแชทหมาป่า กลางวันต้องแกล้งเป็นชาวบ้านเพื่อไม่ให้ถูกโหวต'},
+  villager:{n:'ชาวบ้าน',d:'ไม่มีความสามารถพิเศษ ใช้การสังเกตและคุยกันหาตัวหมาป่า แล้วโหวตประหาร'},
+  seer:{n:'หมอดู',d:'ทุกคืนส่องหนึ่งคน ตอนเช้าจะรู้ว่าคนนั้นเป็นหมาป่าหรือไม่'},
+  witch:{n:'แม่มด',d:'เห็นว่าคืนนี้หมาป่าเลือกใคร มียาช่วย 1 ขวดกับยาฆ่า 1 ขวด ใช้ได้ครั้งเดียวต่อขวด และคืนหนึ่งใช้ได้ขวดเดียว'}
+};
+var ROLE_ORDER=['villager','wolf','seer','witch'];
+var PH={lobby:'ห้องรอ',night:'กลางคืน',day:'กลางวัน',vote:'โหวตประหาร',end:'จบเกม'};
+function dist(n){var w=n>=12?3:n>=8?2:1,s=n>=5?1:0,m=n>=6?1:0;return {w:w,s:s,m:m,v:n-w-s-m}}
+
+/* ---------- role pictures (original SVG, drawn for this game) ---------- */
+function svgWrap(body,size,label){
+  return '<svg class="art" viewBox="0 0 120 120" width="'+size+'" height="'+size+'" role="img" aria-label="'+label+'"><defs><clipPath id="ccp"><circle cx="60" cy="60" r="58"/></clipPath></defs><g clip-path="url(#ccp)">'+body+'</g><circle cx="60" cy="60" r="58" fill="none" stroke="var(--line)" stroke-width="2"/></svg>';
+}
+var ART={
+  villager:
+    '<rect width="120" height="120" fill="#d6e4c9"/>'+
+    '<path d="M0 98 Q40 84 120 96 V120 H0Z" fill="#a9c48f"/>'+
+    '<path d="M98 38 V112" stroke="#6b4a2b" stroke-width="3.5" stroke-linecap="round"/>'+
+    '<path d="M91 38 V50 Q91 56 98 56 Q105 56 105 50 V38" stroke="#7d8591" stroke-width="3" fill="none" stroke-linecap="round"/>'+
+    '<path d="M98 36 V50" stroke="#7d8591" stroke-width="3" stroke-linecap="round"/>'+
+    '<path d="M26 120 Q28 88 60 86 Q92 88 94 120Z" fill="#7a5c3e"/>'+
+    '<path d="M48 88 L60 101 L72 88Z" fill="#e8d9b8"/>'+
+    '<rect x="54" y="76" width="12" height="12" fill="#e3b88a"/>'+
+    '<circle cx="60" cy="62" r="20" fill="#efc79d"/>'+
+    '<circle cx="50" cy="69" r="4" fill="#e9a58f" opacity=".6"/><circle cx="70" cy="69" r="4" fill="#e9a58f" opacity=".6"/>'+
+    '<circle cx="52" cy="62" r="2.2" fill="#2b2b2b"/><circle cx="68" cy="62" r="2.2" fill="#2b2b2b"/>'+
+    '<path d="M53 71 Q60 77 67 71" stroke="#8a4b3a" stroke-width="2.2" fill="none" stroke-linecap="round"/>'+
+    '<ellipse cx="60" cy="49" rx="35" ry="8" fill="#d9a441"/>'+
+    '<path d="M42 49 Q44 27 60 25 Q76 27 78 49Z" fill="#ecbd5a"/>'+
+    '<path d="M42.5 44 Q60 51 77.5 44 L78 49 Q60 56 42 49Z" fill="#a8452f"/>',
+  wolf:
+    '<rect width="120" height="120" fill="#232846"/>'+
+    '<circle cx="90" cy="28" r="14" fill="#e8edff" opacity=".92"/>'+
+    '<path d="M28 56 L32 16 L52 34 Q60 31 68 34 L88 16 L92 56 Q94 84 60 106 Q26 84 28 56Z" fill="#8d96ad"/>'+
+    '<path d="M36 42 L37 26 L46 35Z" fill="#d9a8b4"/><path d="M84 42 L83 26 L74 35Z" fill="#d9a8b4"/>'+
+    '<path d="M44 62 Q60 56 76 62 Q80 86 60 100 Q40 86 44 62Z" fill="#c9cfdd"/>'+
+    '<path d="M38 54 L53 60 L45 67Z" fill="#ffd24a"/><path d="M82 54 L67 60 L75 67Z" fill="#ffd24a"/>'+
+    '<circle cx="46" cy="61" r="2.2" fill="#1a1c2e"/><circle cx="74" cy="61" r="2.2" fill="#1a1c2e"/>'+
+    '<path d="M36 50 L54 57 M84 50 L66 57" stroke="#4b5068" stroke-width="3" stroke-linecap="round"/>'+
+    '<path d="M54 79 Q60 75 66 79 Q64 86 60 87 Q56 86 54 79Z" fill="#1b1f33"/>'+
+    '<path d="M60 87 V91 M51 93 Q60 98 69 93" stroke="#1b1f33" stroke-width="2.2" fill="none" stroke-linecap="round"/>'+
+    '<path d="M54 94 L56 101 L58.5 95Z" fill="#fff"/><path d="M66 94 L64 101 L61.5 95Z" fill="#fff"/>',
+  seer:
+    '<rect width="120" height="120" fill="#35295f"/>'+
+    '<path d="M20 26 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z" fill="#ffe08a"/>'+
+    '<path d="M98 22 l1.6 4 4 1.6 -4 1.6 -1.6 4 -1.6 -4 -4 -1.6 4 -1.6z" fill="#ffe08a"/>'+
+    '<path d="M100 70 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z" fill="#ffe08a"/>'+
+    '<path d="M10 100 Q60 86 110 100 V120 H10Z" fill="#5a3f8f"/>'+
+    '<path d="M38 100 L45 84 H75 L82 100Z" fill="#c9a24a"/>'+
+    '<path d="M43 84 H77 V90 H43Z" fill="#e3c066"/>'+
+    '<circle cx="60" cy="58" r="28" fill="#7f9bff"/>'+
+    '<circle cx="60" cy="58" r="22" fill="#a9c1ff" opacity=".45"/>'+
+    '<path d="M42 44 Q48 34 60 33" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".85"/>'+
+    '<path d="M43 60 Q60 45 77 60 Q60 75 43 60Z" fill="#fff"/>'+
+    '<circle cx="60" cy="60" r="7.5" fill="#4b2fa8"/><circle cx="60" cy="60" r="3.2" fill="#120d2e"/><circle cx="62.5" cy="57.5" r="1.7" fill="#fff"/>',
+  witch:
+    '<rect width="120" height="120" fill="#243a34"/>'+
+    '<circle cx="93" cy="26" r="9" fill="#f4e7a8"/>'+
+    '<path d="M24 120 Q28 94 60 92 Q92 94 96 120Z" fill="#4a2f7a"/>'+
+    '<path d="M32 70 Q26 92 38 106 L45 80Z" fill="#5b3a7a"/><path d="M88 70 Q94 92 82 106 L75 80Z" fill="#5b3a7a"/>'+
+    '<circle cx="60" cy="73" r="20" fill="#a6d18e"/>'+
+    '<circle cx="52" cy="73" r="2.4" fill="#1c1c1c"/><circle cx="68" cy="73" r="2.4" fill="#1c1c1c"/>'+
+    '<path d="M60 75 Q56 83 62 83" stroke="#6e9a5c" stroke-width="2.4" fill="none" stroke-linecap="round"/>'+
+    '<path d="M50 87 Q60 95 70 87" stroke="#3a2a2a" stroke-width="2.4" fill="none" stroke-linecap="round"/>'+
+    '<ellipse cx="60" cy="57" rx="41" ry="9" fill="#2e1f52"/>'+
+    '<path d="M40 55 Q54 35 68 15 Q76 5 86 15 Q76 25 80 55Z" fill="#3b2a68"/>'+
+    '<path d="M41 51 Q60 59 80 51 L80 55 Q60 64 40 55Z" fill="#9b59d6"/>'+
+    '<rect x="55.5" y="53" width="10" height="8" rx="1.5" fill="none" stroke="#f2c94c" stroke-width="2"/>',
+  back:
+    '<rect width="120" height="120" fill="#2a3158"/>'+
+    '<circle cx="56" cy="62" r="26" fill="#e8edff"/><circle cx="68" cy="54" r="23" fill="#2a3158"/>'+
+    '<path d="M88 30 l1.6 4 4 1.6 -4 1.6 -1.6 4 -1.6 -4 -4 -1.6 4 -1.6z" fill="#ffe08a"/>'
+};
+function roleArt(role,size){
+  var r=ROLE[role];
+  return svgWrap(ART[role]||ART.back,size||64,r?r.n:'ซ่อนอยู่');
+}
+function potionArt(kind,size,empty){
+  var c=kind==='heal'?'#4fd1a0':'#a366ff';
+  var mark=kind==='heal'
+    ? '<path d="M24 31 V41 M19 36 H29" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>'
+    : '<path d="M20 32 L28 40 M28 32 L20 40" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>';
+  return '<svg class="art" viewBox="0 0 48 48" width="'+size+'" height="'+size+'" role="img" aria-label="'+(kind==='heal'?'ยาช่วย':'ยาฆ่า')+'"'+(empty?' style="opacity:.35;filter:grayscale(1)"':'')+'>'+
+    '<rect x="19" y="3" width="10" height="7" rx="2" fill="#b08a5a"/>'+
+    '<rect x="20.5" y="9" width="7" height="9" fill="#dfe8f5" stroke="var(--line)" stroke-width="1"/>'+
+    '<path d="M20.5 18 Q7 26 9 36 Q11 45 24 45 Q37 45 39 36 Q41 26 27.5 18Z" fill="#dfe8f5" stroke="var(--line)" stroke-width="1"/>'+
+    '<path d="M11 33 Q24 28 37 33 Q37 43 24 44 Q12 43 11 33Z" fill="'+c+'"/>'+mark+'</svg>';
+}
+
+/* ---------- state ---------- */
+var token='';
+try{token=localStorage.getItem('ww:token')||''}catch(e){}
+if(token.length<8){
+  var a=new Uint8Array(16);(window.crypto||{getRandomValues:function(x){for(var i=0;i<x.length;i++)x[i]=Math.random()*256}}).getRandomValues(a);
+  token=Array.prototype.map.call(a,function(b){return ('0'+b.toString(16)).slice(-2)}).join('');
+  try{localStorage.setItem('ww:token',token)}catch(e){}
+}
+var ws=null,retry=0,retryTimer=null,savedCode='';
+try{savedCode=localStorage.getItem('ww:room')||''}catch(e){}
+var ui={state:'boot',name:'',joinCode:'',err:'',busy:false,online:false,revealFor:'',copied:'',v:null,chatDraft:'',poisonTo:'',poisonKey:''};
+try{ui.name=localStorage.getItem('ww:name')||''}catch(e){}
+(function(){var h='';try{h=(location.hash||'').slice(1).toUpperCase()}catch(e){}if(/^[A-Z]{4}$/.test(h))ui.joinCode=h})();
+
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function pl(id){var v=ui.v;return v&&v.players.find(function(p){return p.id===id})}
+function nameOf(id){var p=pl(id);return p?p.name:'ผู้เล่น'}
+function saveRoom(c){savedCode=c||'';try{if(c)localStorage.setItem('ww:room',c);else localStorage.removeItem('ww:room')}catch(e){}}
+
+/* ---------- connection ---------- */
+function send(o){if(ws&&ws.readyState===1){ws.send(JSON.stringify(o));return true}return false}
+function connect(){
+  clearTimeout(retryTimer);
+  var proto=location.protocol==='https:'?'wss:':'ws:';
+  try{ws=new WebSocket(proto+'//'+location.host)}catch(e){scheduleRetry();return}
+  ws.onopen=function(){
+    retry=0;ui.online=true;
+    if(savedCode)send({t:'resume',token:token,code:savedCode});
+    else if(ui.state==='boot'){ui.state='entry'}
+    render();
+  };
+  ws.onmessage=function(ev){
+    var m;try{m=JSON.parse(ev.data)}catch(e){return}
+    if(m.t==='state'){
+      ui.v=m.v;ui.state='room';ui.err='';ui.busy=false;
+      saveRoom(m.v.code);
+      try{localStorage.setItem('ww:name',nameOf(m.v.me.id))}catch(e){}
+      try{if(location.hash!=='#'+m.v.code)history.replaceState(null,'','#'+m.v.code)}catch(e){}
+    }else if(m.t==='err'){ui.err=m.m||'เกิดข้อผิดพลาด';ui.busy=false;if(ui.state==='boot')ui.state='entry'}
+    else if(m.t==='gone'){ui.v=null;saveRoom('');ui.state='entry';ui.busy=false;ui.err=m.m||'';try{history.replaceState(null,'','#')}catch(e){}}
+    render();
+  };
+  ws.onclose=function(){ui.online=false;ui.busy=false;render();scheduleRetry()};
+  ws.onerror=function(){};
+}
+function scheduleRetry(){
+  clearTimeout(retryTimer);
+  retryTimer=setTimeout(connect,Math.min(1000*Math.pow(1.6,retry++),8000));
+}
+document.addEventListener('visibilitychange',function(){
+  if(!document.hidden&&(!ws||ws.readyState>1)){retry=0;connect()}
+});
+
+/* ---------- ui pieces ---------- */
+function emblem(day){
+  if(day){
+    var g='';
+    for(var i=0;i<8;i++){var a=i*Math.PI/4;g+='<line x1="'+(16+10*Math.cos(a)).toFixed(2)+'" y1="'+(16+10*Math.sin(a)).toFixed(2)+'" x2="'+(16+13.5*Math.cos(a)).toFixed(2)+'" y2="'+(16+13.5*Math.sin(a)).toFixed(2)+'"/>'}
+    return '<svg class="emb" viewBox="0 0 32 32" width="34" height="34" aria-hidden="true"><circle cx="16" cy="16" r="6.5" fill="var(--moon)"/><g stroke="var(--moon)" stroke-width="2" stroke-linecap="round" fill="none">'+g+'</g></svg>';
+  }
+  return '<svg class="emb" viewBox="0 0 32 32" width="34" height="34" aria-hidden="true"><circle cx="15" cy="16" r="11" fill="var(--moon)"/><circle cx="21" cy="12" r="9.5" fill="var(--bg)"/></svg>';
+}
+function header(day,room){
+  return '<header class="top"><div class="brand">'+emblem(day)+'<div><div class="eyebrow">เกมหมาป่า</div><h1>คืนหมาป่า</h1></div></div>'+
+    (room?'<div class="codechip" aria-label="รหัสห้อง">'+esc(room)+'</div>':'')+'</header>';
+}
+function banner(){
+  var s='';
+  if(!ui.online)s+='<div class="warn" role="status">ขาดการเชื่อมต่อ กำลังต่อใหม่…</div>';
+  if(ui.err)s+='<div class="err" role="alert">'+esc(ui.err)+'</div>';
+  return s;
+}
+function picks(ids,cur,opt){
+  opt=opt||{};
+  return '<div class="picks">'+ids.map(function(id){
+    var on=cur===id;
+    return '<button class="pick'+(opt.poison?' poison':'')+(on?' on':'')+'" data-act="'+(opt.act||'pick')+'" data-id="'+esc(id)+'" aria-pressed="'+on+'"'+(opt.disabled?' disabled':'')+'><span>'+esc(nameOf(id))+'</span><span class="tick">'+(on?(opt.poison?'เลือกไว้':'เลือกแล้ว'):'')+'</span></button>';
+  }).join('')+'</div>';
+}
+function distTable(){
+  var rows=[4,5,6,8,12,16].map(function(n){var d=dist(n);return '<tr><td>'+n+' คน</td><td>'+d.w+'</td><td>'+d.s+'</td><td>'+d.m+'</td><td>'+d.v+'</td></tr>'}).join('');
+  return '<div class="scroll"><table><thead><tr><th>จำนวนผู้เล่น</th><th>หมาป่า</th><th>หมอดู</th><th>แม่มด</th><th>ชาวบ้าน</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+function gallery(){
+  return '<section class="panel"><h2>บทบาทในเกม</h2><div class="gal">'+ROLE_ORDER.map(function(r){
+    return '<div class="gi">'+roleArt(r,64)+'<div><b class="r-'+r+'">'+ROLE[r].n+'</b><p>'+ROLE[r].d+'</p></div></div>';
+  }).join('')+'</div></section>';
+}
+function nameChips(p,v){
+  return '<span class="t">'+esc(p.name)+'</span>'+(p.id===v.me.id?'<span class="chip">คุณ</span>':'')+(p.isHost?'<span class="chip">โฮสต์</span>':'');
+}
+
+/* ---------- chat ---------- */
+function chatPanel(v){
+  var ch=v.chatCh,msgs=v.chat||[];
+  var list=msgs.length?msgs.map(function(m){
+    var tag=m.ch==='wolf'?'<span class="chip r-wolf">หมาป่า</span>':(m.ch==='dead'?'<span class="chip">คนตาย</span>':'');
+    return '<li class="msg'+(m.from===v.me.id?' mine':'')+'"><b>'+esc(m.n)+tag+'</b><span>'+esc(m.t)+'</span></li>';
+  }).join(''):'<li class="note">ยังไม่มีข้อความ</li>';
+  var hint=ch==='wolf'?'ช่องหมาป่า มีแค่หมาป่าเห็น':ch==='dead'?'ช่องคนตาย คนที่ยังเล่นอยู่มองไม่เห็น':(ch==='all'?(v.phase==='lobby'||v.phase==='end'?'คุยกับทุกคนในห้อง':'คุยกับทุกคน'):'กลางคืนห้ามคุยกัน รอให้สว่าง');
+  return '<section class="panel"><h2>แชท</h2><ul class="chatlist" id="chatlist" aria-live="polite">'+list+'</ul>'+
+    '<p class="note">'+hint+'</p>'+
+    '<div class="chatform"><input id="ci" maxlength="200" autocomplete="off" placeholder="'+(ch?'พิมพ์ข้อความ':'ปิดแชทชั่วคราว')+'" value="'+esc(ui.chatDraft)+'"'+(ch?'':' disabled')+'>'+
+    '<button class="btn" data-act="chat"'+(ch?'':' disabled')+'>ส่ง</button></div></section>';
+}
+function sendChat(){
+  var t=(ui.chatDraft||'').trim();
+  if(!t)return;
+  if(send({t:'chat',text:t})){ui.chatDraft='';var el=document.getElementById('ci');if(el)el.value=''}
+}
+
+/* ---------- screens ---------- */
+function renderEntry(){
+  return header(false,'')+banner()+
+  '<section class="panel"><h2>เริ่มเล่นกับเพื่อน</h2>'+
+    '<label for="nm">ชื่อเล่นของคุณ</label><input id="nm" maxlength="16" autocomplete="off" value="'+esc(ui.name)+'">'+
+    '<button class="btn" data-act="create"'+(!ui.online||ui.busy?' disabled':'')+'>สร้างห้องใหม่</button>'+
+    '<div class="or"><span>หรือเข้าห้องของเพื่อน</span></div>'+
+    '<label for="cd">รหัสห้อง 4 ตัวอักษร</label><input id="cd" maxlength="4" autocomplete="off" placeholder="ABCD" value="'+esc(ui.joinCode)+'">'+
+    '<button class="btn ghost" data-act="join"'+(!ui.online||ui.busy?' disabled':'')+'>เข้าห้อง</button>'+
+  '</section>'+gallery()+
+  '<section class="panel quiet"><h2>แจกบทบาทอัตโนมัติ</h2><p class="note">เล่นได้ 4 ถึง 16 คน ระบบสุ่มบทบาทให้ตามจำนวนคน ไม่มีใครเห็นบทบาทของคนอื่น</p>'+distTable()+'</section>';
+}
+function renderLobby(v){
+  var n=v.players.length,d=v.dist,isHost=v.me.isHost;
+  var list=v.players.map(function(p){
+    return '<li class="pl"><span class="nm">'+nameChips(p,v)+'</span><span class="st">'+(p.connected?'':'หลุดการเชื่อมต่อ')+'</span></li>';
+  }).join('');
+  var host=v.players.find(function(p){return p.isHost});
+  return header(false,v.code)+banner()+
+  '<section class="panel"><div class="eyebrow">รหัสห้อง</div><div class="big">'+esc(v.code)+'</div>'+
+    '<p class="note">ส่งลิงก์นี้ให้เพื่อน เปิดแล้วใส่ชื่อก็เข้าห้องได้เลย ไม่ต้องล็อกอิน</p>'+
+    '<button class="btn ghost small" data-act="copy">'+(ui.copied==='link'?'คัดลอกลิงก์แล้ว':'คัดลอกลิงก์ชวนเพื่อน')+'</button></section>'+
+  '<section class="panel"><h2>ผู้เล่นในห้อง ('+n+')</h2><ul class="pls">'+list+'</ul></section>'+
+  '<section class="panel">'+
+    (isHost
+      ? '<p class="note">'+(n>=4?'ตอนนี้จะได้หมาป่า '+d.w+' · หมอดู '+d.s+' · แม่มด '+d.m+' · ชาวบ้าน '+d.v:'ต้องมีอย่างน้อย 4 คน ถึงเริ่มเกมได้')+'</p><button class="btn" data-act="start"'+(n<4?' disabled':'')+'>เริ่มเกม</button>'
+      : '<p class="note">รอโฮสต์'+(host?' ('+esc(host.name)+')':'')+' กดเริ่มเกม</p>')+
+    '<button class="btn ghost" data-act="leave">ออกจากห้อง</button></section>'+
+  chatPanel(v)+gallery();
+}
+function logPanel(v){
+  var items=(v.log||[]).slice().reverse();
+  if(!items.length)return '';
+  var tag={night:'คืน',vote:'โหวต',info:'เกม'};
+  return '<section class="panel"><h2>เหตุการณ์</h2><ol class="log">'+items.map(function(l){
+    return '<li><b>รอบ '+l.r+' · '+(tag[l.k]||'')+'</b><span>'+esc(l.t)+'</span></li>';
+  }).join('')+'</ol></section>';
+}
+function playersPanel(v){
+  var list=v.players.map(function(p){
+    var chip='',art='';
+    if(p.role){art=roleArt(p.role,28);if(p.id!==v.me.id)chip='<span class="chip r-'+p.role+'">'+ROLE[p.role].n+'</span>'}
+    var st=!p.inGame?'ผู้ชม':(p.alive?'มีชีวิต':'ตายแล้ว');
+    if(!p.connected)st+=' · หลุด';
+    return '<li class="pl'+(p.inGame&&!p.alive?' dead':'')+'"><span class="nm">'+art+nameChips(p,v)+chip+'</span><span class="st">'+st+'</span></li>';
+  }).join('');
+  return '<section class="panel"><h2>ผู้เล่น</h2><ul class="pls">'+list+'</ul></section>';
+}
+function hostBar(v){
+  if(!v.me.isHost||!v.progress)return '';
+  if(v.phase==='night')return '<section class="panel quiet"><p class="note">เฉพาะโฮสต์: ส่งภารกิจคืนนี้แล้ว '+v.progress.done+'/'+v.progress.total+' ระบบสรุปให้เองเมื่อครบ</p><button class="btn ghost small" data-act="forceNight">สรุปคืนนี้เลย</button></section>';
+  if(v.phase==='vote')return '<section class="panel quiet"><p class="note">เฉพาะโฮสต์: โหวตแล้ว '+v.progress.done+'/'+v.progress.total+' ระบบสรุปให้เองเมื่อครบ</p><button class="btn ghost small" data-act="forceVote">ปิดโหวตตอนนี้</button></section>';
+  return '';
+}
+function aliveOthers(v){return v.players.filter(function(p){return p.inGame&&p.alive&&p.id!==v.me.id}).map(function(p){return p.id})}
+function witchPanel(v){
+  var w=v.witch||{},key=v.game+':'+v.round;
+  if(ui.poisonKey!==key){ui.poisonKey=key;ui.poisonTo=''}
+  var pots='<div class="pots"><span class="pot">'+potionArt('heal',40,!w.heal)+'ยาช่วย '+(w.heal?'1':'0')+' ขวด</span><span class="pot">'+potionArt('poison',40,!w.poison)+'ยาฆ่า '+(w.poison?'1':'0')+' ขวด</span></div>';
+  var body;
+  if(!w.heal&&!w.poison)body='<p class="note">ยาหมดแล้ว คืนนี้ไม่มีอะไรให้ทำ รอให้สว่าง</p>';
+  else if(w.acted){
+    body='<p>เลือกแล้ว: <b>'+(w.acted==='heal'?'ใช้ยาช่วย':(w.acted==='poison'?'ใช้ยาฆ่า':'ไม่ใช้ยา'))+'</b></p><p class="note">รอทุกคนทำภารกิจ แล้วจะสว่าง</p>';
+  }else if(!w.victim)body='<p class="note">รอหมาป่าเลือกเหยื่อ…</p>';
+  else{
+    var vn=esc(nameOf(w.victim));
+    body='<p>คืนนี้หมาป่าเลือกกัด <b>'+vn+'</b></p>'+
+      (w.heal?'<button class="btn good" data-act="wheal">ใช้ยาช่วย '+vn+'</button>':'')+
+      (w.poison?'<h2>ใช้ยาฆ่า</h2>'+picks(aliveOthers(v),ui.poisonTo,{act:'ppick',poison:true})+
+        (ui.poisonTo?'<button class="btn danger" data-act="wpoison">ยืนยันใช้ยาฆ่ากับ '+esc(nameOf(ui.poisonTo))+'</button>':''):'')+
+      '<button class="btn ghost" data-act="wpass">ไม่ใช้ยาคืนนี้</button>'+
+      '<p class="note">คืนหนึ่งใช้ได้ยาเดียว ใช้แล้วหมดขวดนั้นตลอดเกม</p>';
+  }
+  return '<section class="panel"><h2>แม่มด</h2>'+pots+body+'</section>';
+}
+function actionPanel(v){
+  var role=v.me.role,alive=v.me.alive,cur=v.myAct,ph=v.phase;
+  if(!role)return '<section class="panel"><p class="note">คุณเข้ามาหลังเริ่มเกม จึงดูได้อย่างเดียว</p></section>';
+  if(ph==='night'){
+    if(!alive)return '<section class="panel"><h2>คุณตายแล้ว</h2><p class="note">ดูเกมต่อได้ และคุยกับคนตายคนอื่นได้ในแชท แต่ห้ามบอกใบ้คนที่ยังเล่นอยู่</p></section>';
+    if(role==='wolf'){
+      var prey=v.players.filter(function(p){return p.inGame&&p.alive&&p.role!=='wolf'}).map(function(p){return p.id});
+      var mates=(v.mates||[]);
+      return '<section class="panel"><h2>เลือกเหยื่อคืนนี้</h2>'+
+        (mates.length?'<p class="note">เพื่อนหมาป่า: '+mates.map(function(m){return esc(nameOf(m.id))+(m.to?' (เลือก '+esc(nameOf(m.to))+')':' (ยังไม่เลือก)')}).join(', ')+'</p>':'<p class="note">คุณเป็นหมาป่าตัวเดียว</p>')+
+        picks(prey,cur,{disabled:v.locked})+
+        (v.locked?'<p class="note">หมาป่าเลือกครบแล้ว ผลถูกล็อก รอหมอดูกับแม่มด</p>':'<p class="note">เปลี่ยนใจได้จนกว่าหมาป่าทุกตัวจะเลือกครบ พอครบแล้วผลจะล็อกทันที ปรึกษากันในแชทให้ตรงกันก่อน ถ้าเลือกไม่ตรงกัน ระบบสุ่มจากคนที่ได้คะแนนสูงสุด</p>')+'</section>';
+    }
+    if(role==='seer')return '<section class="panel"><h2>เลือกคนที่จะส่อง</h2>'+picks(aliveOthers(v),cur)+'<p class="note">ตอนเช้าคุณจะรู้ว่าคนนี้เป็นหมาป่าหรือไม่</p></section>';
+    if(role==='witch')return witchPanel(v);
+    return '<section class="panel"><h2>กลางคืนแล้ว</h2><p class="note">ชาวบ้านหลับไปก่อน รอทุกคนทำภารกิจ แล้วจะสว่าง</p></section>';
+  }
+  if(ph==='day'){
+    var ns=(v.log||[]).filter(function(l){return l.k==='night'&&l.r===v.round});
+    var sr=v.seer&&v.seer.r===v.round?v.seer:null;
+    return '<section class="panel"><h2>ตอนเช้า</h2>'+ns.map(function(n){return '<p class="verdict">'+esc(n.t)+'</p>'}).join('')+
+      (sr?'<p>ผลที่คุณส่อง: <b>'+esc(nameOf(sr.to))+'</b> '+(sr.wolf?'<span class="r-wolf">เป็นหมาป่า</span>':'ไม่ใช่หมาป่า')+'</p>':'')+
+      '<p class="note">ถึงเวลาคุยกันในแชทด้านล่าง แล้วให้โฮสต์กดเริ่มโหวตเมื่อพร้อม</p>'+
+      (v.me.isHost?'<button class="btn" data-act="toVote">เริ่มโหวตประหาร</button>':'<p class="note">รอโฮสต์เริ่มโหวต</p>')+'</section>';
+  }
+  if(ph==='vote'){
+    if(!alive)return '<section class="panel"><h2>คุณตายแล้ว</h2><p class="note">รอผลโหวตของคนที่ยังเล่นอยู่</p></section>';
+    return '<section class="panel"><h2>โหวตประหารหนึ่งคน</h2>'+picks(aliveOthers(v),cur)+'<p class="note">เปลี่ยนโหวตได้จนกว่าทุกคนจะโหวตครบ คะแนนเสมอคือไม่มีใครถูกประหาร</p></section>';
+  }
+  return '';
+}
+function renderGame(v){
+  var role=v.me.role,out=header(v.phase!=='night',v.code)+banner();
+  if(v.phase==='end'){
+    out+='<section class="panel"><div class="eyebrow">จบเกม</div><p class="verdict">'+(v.winner==='wolf'?'หมาป่าชนะ เหลือหมาป่าเท่ากับชาวบ้านแล้ว':'ชาวบ้านชนะ กำจัดหมาป่าครบแล้ว')+'</p>'+
+      (v.me.isHost?'<button class="btn" data-act="rematch">เล่นอีกรอบกับคนเดิม</button>':'<p class="note">รอโฮสต์เริ่มรอบใหม่</p>')+
+      '<button class="btn ghost" data-act="leave">ออกจากห้อง</button></section>';
+  }else{
+    out+='<section class="phase"><span class="eyebrow">รอบที่ '+v.round+'</span><strong>'+PH[v.phase]+'</strong></section>';
+  }
+  if(role&&v.phase!=='end'){
+    var rev=ui.revealFor===v.game;
+    out+='<button class="role'+(rev?' open':'')+'" data-act="reveal" aria-expanded="'+rev+'">'+roleArt(rev?role:'back',rev?88:72)+
+      '<span class="rt"><span class="eyebrow">บทบาทของคุณ'+(v.me.alive?'':' (ตายแล้ว)')+'</span>'+
+      (rev?'<span class="rn r-'+role+'">'+ROLE[role].n+'</span><span>'+ROLE[role].d+'</span><span class="hint">แตะเพื่อซ่อน</span>'
+          :'<span class="rn">แตะเพื่อดู</span><span class="hint">ซ่อนไว้ก่อน กันคนข้างๆ แอบเห็น</span>')+'</span></button>';
+  }
+  if(v.phase!=='end')out+=actionPanel(v)+hostBar(v);
+  out+=chatPanel(v)+playersPanel(v)+logPanel(v);
+  if(v.phase!=='end')out+='<section class="panel quiet"><button class="btn ghost small" data-act="leave">ออกจากห้อง</button></section>';
+  return out;
+}
+function render(){
+  var v=ui.v,html,day=false;
+  if(ui.state==='room'&&v)day=(v.phase==='day'||v.phase==='vote'||v.phase==='end');
+  document.documentElement.setAttribute('data-phase',day?'day':'night');
+  if(ui.state==='boot')html=header(false,'')+banner()+'<section class="panel"><p class="note">กำลังเชื่อมต่อ…</p></section>';
+  else if(ui.state==='entry'||!v)html=renderEntry();
+  else if(v.phase==='lobby')html=renderLobby(v);
+  else html=renderGame(v);
+  var ae=document.activeElement,keep=ae&&ae.id,pos=null;
+  var cl=document.getElementById('chatlist'),stick=true,oldTop=0;
+  if(cl){oldTop=cl.scrollTop;stick=cl.scrollHeight-cl.scrollTop-cl.clientHeight<24}
+  if(keep&&(keep==='nm'||keep==='cd'||keep==='ci')){try{pos=ae.selectionStart}catch(e){}}
+  $app.innerHTML=html;
+  var cl2=document.getElementById('chatlist');
+  if(cl2)cl2.scrollTop=stick?cl2.scrollHeight:oldTop;
+  if(keep){var el=document.getElementById(keep);if(el&&!el.disabled){el.focus();if(pos!=null){try{el.setSelectionRange(pos,pos)}catch(e){}}}}
+}
+
+/* ---------- events ---------- */
+$app.addEventListener('input',function(e){
+  if(e.target.id==='nm')ui.name=e.target.value;
+  if(e.target.id==='cd'){ui.joinCode=e.target.value.toUpperCase().replace(/[^A-Z]/g,'');e.target.value=ui.joinCode}
+  if(e.target.id==='ci')ui.chatDraft=e.target.value;
+});
+$app.addEventListener('keydown',function(e){
+  if(e.target.id==='ci'&&e.key==='Enter'&&!e.isComposing){e.preventDefault();sendChat()}
+});
+$app.addEventListener('click',function(e){
+  var b=e.target.closest('[data-act]');if(!b||b.disabled)return;
+  var a=b.getAttribute('data-act'),v=ui.v;
+  if(a==='create'){
+    var nm=ui.name.trim();if(!nm){ui.err='ใส่ชื่อเล่นก่อน';render();return}
+    ui.err='';ui.busy=true;send({t:'create',token:token,name:nm});render();
+  }else if(a==='join'){
+    var nm2=ui.name.trim();
+    if(!nm2){ui.err='ใส่ชื่อเล่นก่อน';render();return}
+    if(!/^[A-Z]{4}$/.test(ui.joinCode)){ui.err='รหัสห้องต้องเป็นตัวอักษร 4 ตัว';render();return}
+    ui.err='';ui.busy=true;send({t:'join',token:token,name:nm2,code:ui.joinCode});render();
+  }else if(a==='leave'){send({t:'leave'})}
+  else if(a==='start')send({t:'start'});
+  else if(a==='toVote')send({t:'toVote'});
+  else if(a==='forceNight')send({t:'forceNight'});
+  else if(a==='forceVote')send({t:'forceVote'});
+  else if(a==='rematch')send({t:'rematch'});
+  else if(a==='pick')send({t:'act',to:b.getAttribute('data-id')});
+  else if(a==='ppick'){ui.poisonTo=ui.poisonTo===b.getAttribute('data-id')?'':b.getAttribute('data-id');render()}
+  else if(a==='wheal')send({t:'witch',kind:'heal'});
+  else if(a==='wpoison'&&ui.poisonTo)send({t:'witch',kind:'poison',to:ui.poisonTo});
+  else if(a==='wpass')send({t:'witch',kind:'pass'});
+  else if(a==='chat')sendChat();
+  else if(a==='reveal'&&v){ui.revealFor=(ui.revealFor===v.game)?'':v.game;render()}
+  else if(a==='copy'){
+    var url=location.href.split('#')[0]+'#'+(v?v.code:'');
+    var done=function(){ui.copied='link';render();setTimeout(function(){ui.copied='';render()},1800)};
+    try{navigator.clipboard.writeText(url).then(done,function(){})}catch(x){}
+  }
+});
+
+render();
+connect();
+})();
+</script>
+</body>
+</html>
